@@ -4,7 +4,7 @@ import (
 	"flag"
 	"fmt"
 
-	"github.com/fallenleaf/discord-test/dt"
+	"github.com/undyware/discord-test/dt"
 )
 
 const (
