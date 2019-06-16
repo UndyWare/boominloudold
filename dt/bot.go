@@ -74,7 +74,8 @@ func messageHandler(session *dgo.Session, message *dgo.MessageCreate) {
 		// Get voice state of user's channel, or an error if the user is not in one
 		vs, err := findUserVoiceState(session, user.ID, message.GuildID)
 		if err != nil {
-			fmt.Printf("Error fetchign VoiceState: %v\n", err)
+			fmt.Printf("Error fetching VoiceState: %v\n", err)
+			return
 		}
 
 		fmt.Println(vs)
