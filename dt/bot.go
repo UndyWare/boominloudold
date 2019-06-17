@@ -3,6 +3,7 @@ package dt
 import (
 	"fmt"
 	"errors"
+	"strings"
 	dgo "github.com/bwmarrin/discordgo"
 )
 
@@ -85,13 +86,52 @@ func messageHandler(session *dgo.Session, message *dgo.MessageCreate) {
 			fmt.Printf("Error deleting message: %v\n", err1)
 		}
 
-	} else {
-		fmt.Printf("Message: %+v || From: %s\n", message.Message, message.Author)
-		msg := fmt.Sprintf("%s said %s in channel %s", message.Author, message.Content, message.ChannelID)
-		fmt.Printf("Sending: %s\n", msg)
-		_, err := session.ChannelMessageSend(message.ChannelID, msg)
-		if err != nil {
-			fmt.Printf("error sending message: %v", err)
+		switch strings.Split(message.Content, " ")[0][3:] {
+		case "play":
+			return
+
+		case "pause":
+			return
+
+		case "stop":
+			return
+
+		case "skip":
+			return
+
+		case "shuffle":
+			return
+
+		case "vol":
+			return
+
+		case "queue":
+			return
+
+		case "resume":
+			return
+
+		case "help":
+			helpmsg := `BoominLoud Commands:
+	bl.play <url> - queue up audio file found at url
+	bl.pause - pause player
+	bl.resume - resume player
+	bl.stop - stop player and clear queue
+	bl.skip - skip to next song in queue
+	bl.shuffle - shuffle the songs that are currently in the queue
+	bl.vol <integer 0-100> - set volume of player`
+
+			_, err := session.ChannelMessageSend(message.ChannelID, helpmsg)
+			if err != nil {
+				fmt.Printf("error sending message: %v", err)
+			}
+
+		default:
+			fmt.Println("Invalid command given.")
+			_, err := session.ChannelMessageSend(message.ChannelID, "Invalid command given.")
+			if err != nil {
+				fmt.Printf("error sending message: %v", err)
+			}
 		}
 	}
 }
