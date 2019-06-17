@@ -8,15 +8,13 @@ import (
 )
 
 const (
-	defaultPrefix   = ""
-	defaultToken    = ""
-	defaultUserName = "disc-bot"
+	defaultPrefix = ""
+	defaultToken  = ""
 )
 
 type botOptions struct {
 	CommandPrefix string
-	//Name          string
-	Token string
+	Token         string
 }
 
 func main() {
@@ -29,12 +27,11 @@ func main() {
 	fmt.Printf("prefix: %s\n", opts.CommandPrefix)
 	fmt.Printf("token: %s\n", opts.Token)
 
-	bot, err := dt.NewBot(opts.Token, "booted and zooted")
+	bot, err := dt.NewBot(opts.Token, opts.CommandPrefix, "with my teetee")
 	if err != nil {
 		fmt.Printf("error creating bot: %v", err)
 	}
 	bot.Close()
-	//discapi.Say("hello")
 }
 
 func parseFlags() (*botOptions, error) {
@@ -42,10 +39,13 @@ func parseFlags() (*botOptions, error) {
 	token := flag.String("token", defaultToken, "bot token")
 	flag.Parse()
 
+	if *prefix == "" || *token == "" {
+		return nil, fmt.Errorf("invalid options. must provide token and prefix")
+	}
+
 	opts := &botOptions{
 		CommandPrefix: *prefix,
-		//Name:          *uName,
-		Token: *token,
+		Token:         *token,
 	}
 	return opts, nil
 }

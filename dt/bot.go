@@ -1,13 +1,15 @@
 package dt
 
 import (
-	"fmt"
 	"errors"
+	"fmt"
+
 	dgo "github.com/bwmarrin/discordgo"
 )
 
 var (
-	botID string
+	botID     string
+	cmdPrefix string
 )
 
 //Bot struct that holds the discord bot session
@@ -17,7 +19,7 @@ type Bot struct {
 }
 
 //NewBot creates new bot
-func NewBot(token string, status string) (*Bot, error) {
+func NewBot(token string, prefix string, status string) (*Bot, error) {
 	session, err := dgo.New("Bot " + token)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %+v", "error creating session", err)
@@ -40,11 +42,41 @@ func NewBot(token string, status string) (*Bot, error) {
 	}
 
 	defer session.Close()
+	cmdPrefix = prefix
 
 	<-make(chan struct{})
 	return nil, nil
 }
 
+func messageHandler(session *dgo.Session, message *dgo.MessageCreate) {
+	user := message.Author
+	if user.ID == botID || user.Bot {
+		//Ignore self and other bots
+		return
+	}
+
+	if message.Content[0:len(cmdPrefix)] == cmdPrefix {
+		vs, err := findUserVoiceState(session, user.ID, message.GuildID)
+		if err != nil {
+			fmt.Printf("Error fetching VoiceState: %v\n", err)
+			return
+		}
+
+		err = session.ChannelMessageDelete(message.ChannelID, message.ID)
+		if err != nil {
+			fmt.Printf("Error deleting message: %v\n", err)
+		}
+
+		vc, err := session.ChannelVoiceJoin(vs.GuildID, vs.ChannelID, false, true)
+		defer vc.Disconnect()
+		if err != nil {
+			fmt.Printf("error joining voice channel: %v", err)
+		}
+		if err := loadAudio("./airhorn.mp3", vc); err != nil {
+			fmt.Printf("error loading audio: %v\n", err)
+		}
+	}
+}
 
 func findUserVoiceState(session *dgo.Session, userid string, guildID string) (*dgo.VoiceState, error) {
 	guild, err := session.Guild(guildID)
@@ -58,45 +90,4 @@ func findUserVoiceState(session *dgo.Session, userid string, guildID string) (*d
 		}
 	}
 	return nil, errors.New("Could not find user's voice state")
-}
-
-
-func messageHandler(session *dgo.Session, message *dgo.MessageCreate) {
-	user := message.Author
-	if user.ID == botID || user.Bot {
-		//Ignore self and other bots
-		return
-	}
-
-	// Check if message starts with bl.
-	// If it doesnt, we just ignore the message
-	if message.Content[0:3] == "bl." {
-		// Get voice state of user's channel, or an error if the user is not in one
-		vs, err := findUserVoiceState(session, user.ID, message.GuildID)
-		if err != nil {
-			fmt.Printf("Error fetching VoiceState: %v\n", err)
-			return
-		}
-
-		fmt.Println(vs)
-		fmt.Println("Sender ID: " + user.ID)
-		err1 := session.ChannelMessageDelete(message.ChannelID, message.ID)
-		if err != nil {
-			fmt.Printf("Error deleting message: %v\n", err1)
-		}
-
-	} else {
-		fmt.Printf("Message: %+v || From: %s\n", message.Message, message.Author)
-		msg := fmt.Sprintf("%s said %s in channel %s", message.Author, message.Content, message.ChannelID)
-		fmt.Printf("Sending: %s\n", msg)
-		_, err := session.ChannelMessageSend(message.ChannelID, msg)
-		if err != nil {
-			fmt.Printf("error sending message: %v", err)
-		}
-	}
-}
-
-func textSend(session *dgo.Session, msg string) {
-	fmt.Printf("sending msg: %s\n", msg)
-	//discord.Channel
 }
