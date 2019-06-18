@@ -8,7 +8,7 @@ import (
 	"github.com/jonas747/dca"
 )
 
-func loadAudio(path string, vc *dgo.VoiceConnection) error {
+func (bot *Bot) loadAudio(path string, vc *dgo.VoiceConnection) (error) {
 	options := dca.StdEncodeOptions
 	es, err := dca.EncodeFile(path, options)
 	if err != nil {
@@ -21,7 +21,7 @@ func loadAudio(path string, vc *dgo.VoiceConnection) error {
 	defer vc.Speaking(false)
 
 	done := make(chan error)
-	dca.NewStream(es, vc, done)
+	bot.StreamingSession = dca.NewStream(es, vc, done)
 	err = <-done
 	if err != nil && err != io.EOF {
 		return err

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/jonas747/dca"
 	dgo "github.com/bwmarrin/discordgo"
 )
 
@@ -16,12 +17,15 @@ var (
 //Bot struct that holds the discord bot session
 type Bot struct {
 	Prefix string
-	dgo.Session
+	*dgo.Session
+	StreamingSession *dca.StreamingSession
+	isPaused bool
 }
 
 //NewBot creates new bot
 func NewBot(token string, prefix string, status string) (*Bot, error) {
 	session, err := dgo.New("Bot " + token)
+	bot := Bot{prefix, session, nil, true}
 	if err != nil {
 		return nil, fmt.Errorf("%s: %+v", "error creating session", err)
 	}
@@ -35,7 +39,7 @@ func NewBot(token string, prefix string, status string) (*Bot, error) {
 		servers := session.State.Guilds
 		fmt.Printf("bot started on %d servers\n", len(servers))
 	})
-	session.AddHandler(messageHandler)
+	session.AddHandler(bot.messageHandler)
 
 	err = session.Open()
 	if err != nil {
@@ -46,10 +50,10 @@ func NewBot(token string, prefix string, status string) (*Bot, error) {
 	cmdPrefix = prefix
 
 	<-make(chan struct{})
-	return nil, nil
+	return &bot, nil
 }
 
-func messageHandler(session *dgo.Session, message *dgo.MessageCreate) {
+func (bot *Bot) messageHandler (session *dgo.Session, message *dgo.MessageCreate) {
 	user := message.Author
 	if user.ID == botID || user.Bot {
 		//Ignore self and other bots
@@ -68,59 +72,70 @@ func messageHandler(session *dgo.Session, message *dgo.MessageCreate) {
 			fmt.Printf("Error deleting message: %v\n", err)
 		}
 
+		// we just join the channel before any command is processed here
 		vc, err := session.ChannelVoiceJoin(vs.GuildID, vs.ChannelID, false, true)
-		defer vc.Disconnect()
 		if err != nil {
 			fmt.Printf("error joining voice channel: %v", err)
 		}
-		if err := loadAudio("./airhorn.mp3", vc); err != nil {
-			fmt.Printf("error loading audio: %v\n", err)
-			switch strings.Split(message.Content, " ")[0][3:] {
-			case "play":
+
+		switch tokens := strings.Split(message.Content, " "); tokens[0][3:] {
+		case "play":
+			// This can double as resume if they dont give an audio file to player
+			// TODO add error checking to SetPaused
+			if len(tokens) < 2 {
+				bot.StreamingSession.SetPaused(false)
 				return
+			}
+			err := bot.loadAudio(tokens[1], vc)
+			if err != nil {
+				fmt.Printf("error loading audio: %v\n", err)
+			}
 
-			case "pause":
-				return
+		case "pause":
+			bot.StreamingSession.SetPaused(true)
+			bot.isPaused = true
 
-			case "stop":
-				return
 
-			case "skip":
-				return
+		case "stop":
+			return
 
-			case "shuffle":
-				return
+		case "skip":
+			return
 
-			case "vol":
-				return
+		case "shuffle":
+			return
 
-			case "queue":
-				return
+		case "vol":
+			return
 
-			case "resume":
-				return
+		case "queue":
+			return
 
-			case "help":
-				helpmsg := `BoominLoud Commands:
-		bl.play <url> - queue up audio file found at url
-		bl.pause - pause player
-		bl.resume - resume player
-		bl.stop - stop player and clear queue
-		bl.skip - skip to next song in queue
-		bl.shuffle - shuffle the songs that are currently in the queue
-		bl.vol <integer 0-100> - set volume of player`
+		case "resume":
+			if bot.isPaused {
+				bot.StreamingSession.SetPaused(false)
+			}
 
-				_, err := session.ChannelMessageSend(message.ChannelID, helpmsg)
-				if err != nil {
-					fmt.Printf("error sending message: %v", err)
-				}
+		case "help":
+			helpmsg := `BoominLoud Commands:
+	bl.play <url> - queue up audio file found at url
+	bl.pause - pause player
+	bl.resume - resume player
+	bl.stop - stop player and clear queue
+	bl.skip - skip to next song in queue
+	bl.shuffle - shuffle the songs that are currently in the queue
+	bl.vol <integer 0-100> - set volume of player`
 
-			default:
-				fmt.Println("Invalid command given.")
-				_, err := session.ChannelMessageSend(message.ChannelID, "Invalid command given.")
-				if err != nil {
-					fmt.Printf("error sending message: %v", err)
-				}
+			_, err := session.ChannelMessageSend(message.ChannelID, helpmsg)
+			if err != nil {
+				fmt.Printf("error sending message: %v", err)
+			}
+
+		default:
+			fmt.Println("Invalid command given.")
+			_, err := session.ChannelMessageSend(message.ChannelID, "Invalid command given.")
+			if err != nil {
+				fmt.Printf("error sending message: %v", err)
 			}
 		}
 	}
