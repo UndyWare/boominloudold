@@ -78,46 +78,51 @@ func (bot *Bot) messageHandler (session *dgo.Session, message *dgo.MessageCreate
 			fmt.Printf("error joining voice channel: %v", err)
 		}
 
-		switch tokens := strings.Split(message.Content, " "); tokens[0][3:] {
-		case "play":
-			// This can double as resume if they dont give an audio file to player
-			// TODO add error checking to SetPaused
-			if len(tokens) < 2 {
-				bot.StreamingSession.SetPaused(false)
-				return
-			}
-			err := bot.loadAudio(tokens[1], vc)
-			if err != nil {
-				fmt.Printf("error loading audio: %v\n", err)
-			}
+		bot.commandHandler(message, session, vc)
+	}
+}
 
-		case "pause":
-			bot.StreamingSession.SetPaused(true)
-			bot.isPaused = true
-
-
-		case "stop":
+func (bot *Bot) commandHandler(message *dgo.MessageCreate, session *dgo.Session, vc *dgo.VoiceConnection) {
+	switch tokens := strings.Split(message.Content, " "); tokens[0][len(cmdPrefix):] {
+	case "play":
+		// This can double as resume if they dont give an audio file to player
+		// TODO add error checking to SetPaused
+		if len(tokens) < 2 {
+			bot.StreamingSession.SetPaused(false)
 			return
+		}
+		err := bot.loadAudio(tokens[1], vc)
+		if err != nil {
+			fmt.Printf("error loading audio: %v\n", err)
+		}
 
-		case "skip":
-			return
+	case "pause":
+		bot.StreamingSession.SetPaused(true)
+		bot.isPaused = true
 
-		case "shuffle":
-			return
 
-		case "vol":
-			return
+	case "stop":
+		return
 
-		case "queue":
-			return
+	case "skip":
+		return
 
-		case "resume":
-			if bot.isPaused {
-				bot.StreamingSession.SetPaused(false)
-			}
+	case "shuffle":
+		return
 
-		case "help":
-			helpmsg := `BoominLoud Commands:
+	case "vol":
+		return
+
+	case "queue":
+		return
+
+	case "resume":
+		if bot.isPaused {
+			bot.StreamingSession.SetPaused(false)
+		}
+
+	case "help":
+		helpmsg := `BoominLoud Commands:
 	bl.play <url> - queue up audio file found at url
 	bl.pause - pause player
 	bl.resume - resume player
@@ -126,17 +131,16 @@ func (bot *Bot) messageHandler (session *dgo.Session, message *dgo.MessageCreate
 	bl.shuffle - shuffle the songs that are currently in the queue
 	bl.vol <integer 0-100> - set volume of player`
 
-			_, err := session.ChannelMessageSend(message.ChannelID, helpmsg)
-			if err != nil {
-				fmt.Printf("error sending message: %v", err)
-			}
+		_, err := session.ChannelMessageSend(message.ChannelID, helpmsg)
+		if err != nil {
+			fmt.Printf("error sending message: %v", err)
+		}
 
-		default:
-			fmt.Println("Invalid command given.")
-			_, err := session.ChannelMessageSend(message.ChannelID, "Invalid command given.")
-			if err != nil {
-				fmt.Printf("error sending message: %v", err)
-			}
+	default:
+		fmt.Println("Invalid command given.")
+		_, err := session.ChannelMessageSend(message.ChannelID, "Invalid command given.")
+		if err != nil {
+			fmt.Printf("error sending message: %v", err)
 		}
 	}
 }
