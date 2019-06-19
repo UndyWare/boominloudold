@@ -99,7 +99,7 @@ func (bot *Bot) commandHandler(message *dgo.MessageCreate, session *dgo.Session,
 			bot.urlQueue = append(bot.urlQueue, tokens[1])
 			go bot.player(vc)
 		} else {
-			fmt.Printf("Appending %v to queue...", tokens[1])
+			fmt.Printf("Appending %v to queue...\n", tokens[1])
 			bot.urlQueue = append(bot.urlQueue, tokens[1])
 		}
 
@@ -152,8 +152,14 @@ func (bot *Bot) commandHandler(message *dgo.MessageCreate, session *dgo.Session,
 
 
 func (bot *Bot) player(vc *dgo.VoiceConnection) {
+	// This is here in case the session has ended and is trying to start up again
+	finished := false
+	if bot.StreamingSession != nil {
+		finished, _ = bot.StreamingSession.Finished()
+	}
+
 	// If the streaming session is not running yet, then start it up
-	if bot.StreamingSession == nil {
+	if bot.StreamingSession == nil || finished {
 		fmt.Println("Starting player...")
 		err := bot.loadAudio(bot.urlQueue[0], vc)
 		if err != nil {
@@ -167,9 +173,9 @@ func (bot *Bot) player(vc *dgo.VoiceConnection) {
 		if finished, _ := bot.StreamingSession.Finished(); finished {
 			// If it is finished, then we need to clear that finished url from Queue
 			bot.urlQueue = bot.urlQueue[1:]
-
 			// If its empty, then player is done
 			if len(bot.urlQueue) == 0 {
+				fmt.Println("Player session ending...")
 				return
 			} else {
 				// Now we need to load up the next url to play
