@@ -19,13 +19,13 @@ type Bot struct {
 	Prefix string
 	*dgo.Session
 	StreamingSession *dca.StreamingSession
-	isPaused bool
+	urlQueue []string
 }
 
 //NewBot creates new bot
 func NewBot(token string, prefix string, status string) (*Bot, error) {
 	session, err := dgo.New("Bot " + token)
-	bot := Bot{prefix, session, nil, true}
+	bot := Bot{prefix, session, nil, nil}
 	if err != nil {
 		return nil, fmt.Errorf("%s: %+v", "error creating session", err)
 	}
@@ -84,6 +84,7 @@ func (bot *Bot) messageHandler (session *dgo.Session, message *dgo.MessageCreate
 
 func (bot *Bot) commandHandler(message *dgo.MessageCreate, session *dgo.Session, vc *dgo.VoiceConnection) {
 	switch tokens := strings.Split(message.Content, " "); tokens[0][len(cmdPrefix):] {
+
 	case "play":
 		// This can double as resume if they dont give an audio file to player
 		// TODO add error checking to SetPaused
@@ -91,18 +92,22 @@ func (bot *Bot) commandHandler(message *dgo.MessageCreate, session *dgo.Session,
 			bot.StreamingSession.SetPaused(false)
 			return
 		}
-		err := bot.loadAudio(tokens[1], vc)
-		if err != nil {
-			fmt.Printf("error loading audio: %v\n", err)
+
+		// If the queue is empty, then start up the player
+		// May want to replace this with a isPlaying bool
+		if len(bot.urlQueue) == 0 {
+			bot.urlQueue = append(bot.urlQueue, tokens[1])
+			go bot.player(vc)
+		} else {
+			fmt.Printf("Appending %v to queue...", tokens[1])
+			bot.urlQueue = append(bot.urlQueue, tokens[1])
 		}
 
 	case "pause":
 		bot.StreamingSession.SetPaused(true)
-		bot.isPaused = true
-
 
 	case "stop":
-		return
+
 
 	case "skip":
 		return
@@ -117,7 +122,7 @@ func (bot *Bot) commandHandler(message *dgo.MessageCreate, session *dgo.Session,
 		return
 
 	case "resume":
-		if bot.isPaused {
+		if bot.StreamingSession.Paused() {
 			bot.StreamingSession.SetPaused(false)
 		}
 
@@ -144,6 +149,40 @@ func (bot *Bot) commandHandler(message *dgo.MessageCreate, session *dgo.Session,
 		}
 	}
 }
+
+
+func (bot *Bot) player(vc *dgo.VoiceConnection) {
+	// If the streaming session is not running yet, then start it up
+	if bot.StreamingSession == nil {
+		fmt.Println("Starting player...")
+		err := bot.loadAudio(bot.urlQueue[0], vc)
+		if err != nil {
+			fmt.Printf("error loading audio: %v\n", err)
+		}
+	}
+
+	// Continuously check if url queue is not empty
+	for len(bot.urlQueue) > 0 {
+		// If it isnt empty, continuously check if the current stream is finished
+		if finished, _ := bot.StreamingSession.Finished(); finished {
+			// If it is finished, then we need to clear that finished url from Queue
+			bot.urlQueue = bot.urlQueue[1:]
+
+			// If its empty, then player is done
+			if len(bot.urlQueue) == 0 {
+				return
+			} else {
+				// Now we need to load up the next url to play
+				err := bot.loadAudio(bot.urlQueue[0], vc)
+				if err != nil {
+					fmt.Printf("error loading audio: %v\n", err)
+				}
+				continue
+			}
+		}
+	}
+}
+
 
 func findUserVoiceState(session *dgo.Session, userid string, guildID string) (*dgo.VoiceState, error) {
 	guild, err := session.Guild(guildID)
