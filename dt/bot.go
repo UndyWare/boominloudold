@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"math/rand"
+	"time"
 
 	"github.com/jonas747/dca"
 	dgo "github.com/bwmarrin/discordgo"
@@ -17,6 +19,7 @@ var (
 //Bot struct that holds the discord bot session
 type Bot struct {
 	Prefix string
+	Token string
 	*dgo.Session
 	StreamingSession *dca.StreamingSession
 	urlQueue []string
@@ -25,9 +28,9 @@ type Bot struct {
 //NewBot creates new bot
 func NewBot(token string, prefix string, status string) (*Bot, error) {
 	session, err := dgo.New("Bot " + token)
-	bot := Bot{prefix, session, nil, nil}
+	bot := Bot{prefix, token, session, nil, nil}
 	if err != nil {
-		return nil, fmt.Errorf("%s: %+v", "error creating session", err)
+		return nil, fmt.Errorf("%s: %+v", "error creating session\n", err)
 	}
 
 	session.AddHandler(func(discord *dgo.Session, ready *dgo.Ready) {
@@ -43,7 +46,7 @@ func NewBot(token string, prefix string, status string) (*Bot, error) {
 
 	err = session.Open()
 	if err != nil {
-		return nil, fmt.Errorf("%s: %+v", "error opening session", err)
+		return nil, fmt.Errorf("%s: %+v", "error opening session\n", err)
 	}
 
 	defer session.Close()
@@ -75,7 +78,7 @@ func (bot *Bot) messageHandler (session *dgo.Session, message *dgo.MessageCreate
 		// we just join the channel before any command is processed here
 		vc, err := session.ChannelVoiceJoin(vs.GuildID, vs.ChannelID, false, true)
 		if err != nil {
-			fmt.Printf("error joining voice channel: %v", err)
+			fmt.Printf("error joining voice channel: %v\n", err)
 		}
 
 		bot.commandHandler(message, session, vc)
@@ -107,19 +110,33 @@ func (bot *Bot) commandHandler(message *dgo.MessageCreate, session *dgo.Session,
 		bot.StreamingSession.SetPaused(true)
 
 	case "stop":
-
+		bot.urlQueue = bot.urlQueue[len(bot.urlQueue):]
+		bot.urlQueue = append(bot.urlQueue, "./nil.mp3")
+		vc.Disconnect()
+		err := bot.loadAudio(bot.urlQueue[0], vc)
+		if err != nil {
+			fmt.Printf("error loading audio: %v\n", err)
+		}
+		return
 
 	case "skip":
 		return
 
 	case "shuffle":
+		rand.Seed(time.Now().UnixNano())
+		rand.Shuffle(len(bot.urlQueue), func(i, j int) {bot.urlQueue[i],
+			bot.urlQueue[j] = bot.urlQueue[j], bot.urlQueue[i]})
 		return
 
 	case "vol":
 		return
 
 	case "queue":
-		return
+		msg := fmt.Sprintf("URL Queue: %v\n", bot.urlQueue)
+		_, err := session.ChannelMessageSend(message.ChannelID, msg)
+		if err != nil {
+			fmt.Printf("error sending message: %v\n", err)
+		}
 
 	case "resume":
 		if bot.StreamingSession.Paused() {
@@ -138,14 +155,14 @@ func (bot *Bot) commandHandler(message *dgo.MessageCreate, session *dgo.Session,
 
 		_, err := session.ChannelMessageSend(message.ChannelID, helpmsg)
 		if err != nil {
-			fmt.Printf("error sending message: %v", err)
+			fmt.Printf("error sending message: %v\n", err)
 		}
 
 	default:
 		fmt.Println("Invalid command given.")
 		_, err := session.ChannelMessageSend(message.ChannelID, "Invalid command given.")
 		if err != nil {
-			fmt.Printf("error sending message: %v", err)
+			fmt.Printf("error sending message: %v\n", err)
 		}
 	}
 }
