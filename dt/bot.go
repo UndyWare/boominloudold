@@ -6,9 +6,13 @@ import (
 	"strings"
 	"math/rand"
 	"time"
+	"os"
+	"os/exec"
+	"net/url"
 
 	"github.com/jonas747/dca"
 	dgo "github.com/bwmarrin/discordgo"
+	ytdl "github.com/rylio/ytdl"
 )
 
 var (
@@ -111,24 +115,21 @@ func (bot *Bot) commandHandler(message *dgo.MessageCreate, session *dgo.Session,
 
 	case "stop":
 		bot.urlQueue = bot.urlQueue[len(bot.urlQueue):]
-		bot.urlQueue = append(bot.urlQueue, "./nil.mp3")
 		vc.Disconnect()
+		return
+
+	case "skip":
+		bot.urlQueue = bot.urlQueue[1:]
 		err := bot.loadAudio(bot.urlQueue[0], vc)
 		if err != nil {
 			fmt.Printf("error loading audio: %v\n", err)
 		}
 		return
 
-	case "skip":
-		return
-
 	case "shuffle":
 		rand.Seed(time.Now().UnixNano())
 		rand.Shuffle(len(bot.urlQueue), func(i, j int) {bot.urlQueue[i],
 			bot.urlQueue[j] = bot.urlQueue[j], bot.urlQueue[i]})
-		return
-
-	case "vol":
 		return
 
 	case "queue":
@@ -167,6 +168,43 @@ func (bot *Bot) commandHandler(message *dgo.MessageCreate, session *dgo.Session,
 	}
 }
 
+func fetchVideo(urlstring string) (string, error) {
+
+	fmt.Println("Fetching")
+	URL, err1 := url.Parse(urlstring)
+	if err1 != nil {
+		return "nil", err1
+	}
+	vid, err2 := ytdl.GetVideoInfoFromURL(URL)
+	if err2 != nil {
+		return "nil", err2
+	}
+
+	title := strings.Replace(vid.Title, " ", "", -1)
+
+	file, err3 := os.Create(title + ".mp4")
+	if err3 != nil {
+		return "nil", err3
+	}
+	defer file.Close()
+	err := vid.Download(vid.Formats[0], file)
+	if err != nil {
+		fmt.Println("OOF")
+		return "nil", err
+	}
+	return title, nil
+}
+
+func convertVideo(title string) string {
+	fmt.Println("converting")
+	cmd := exec.Command("ffmpeg", "-i", title + ".mp4", title + ".mp3")
+	err := cmd.Run()
+	if err != nil {
+		fmt.Printf("Error converting video...%v\n", err)
+		return "nil"
+	}
+	return title + ".mp3"
+}
 
 func (bot *Bot) player(vc *dgo.VoiceConnection) {
 	// This is here in case the session has ended and is trying to start up again
@@ -178,9 +216,18 @@ func (bot *Bot) player(vc *dgo.VoiceConnection) {
 	// If the streaming session is not running yet, then start it up
 	if bot.StreamingSession == nil || finished {
 		fmt.Println("Starting player...")
-		err := bot.loadAudio(bot.urlQueue[0], vc)
-		if err != nil {
-			fmt.Printf("error loading audio: %v\n", err)
+
+		title, err1 := fetchVideo(bot.urlQueue[0])
+		if err1 != nil {
+			fmt.Printf("Error Fetching Audio...%v\n", err1)
+			return
+		}
+
+		mp3 := convertVideo(title)
+
+		err2 := bot.loadAudio(mp3, vc)
+		if err2 != nil {
+			fmt.Printf("error loading audio: %v\n", err2)
 		}
 	}
 
@@ -196,9 +243,17 @@ func (bot *Bot) player(vc *dgo.VoiceConnection) {
 				return
 			} else {
 				// Now we need to load up the next url to play
-				err := bot.loadAudio(bot.urlQueue[0], vc)
-				if err != nil {
-					fmt.Printf("error loading audio: %v\n", err)
+				vid, err3 := fetchVideo(bot.urlQueue[0])
+				if err3 != nil {
+					fmt.Println("Error Fetching Audio...")
+					return
+				}
+
+				mp3 := convertVideo(vid)
+
+				err4 := bot.loadAudio(mp3, vc)
+				if err4 != nil {
+					fmt.Printf("error loading audio: %v\n", err4)
 				}
 				continue
 			}
