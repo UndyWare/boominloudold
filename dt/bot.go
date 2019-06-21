@@ -170,7 +170,7 @@ func (bot *Bot) commandHandler(message *dgo.MessageCreate, session *dgo.Session,
 
 func fetchVideo(urlstring string) (string, error) {
 
-	fmt.Println("Fetching")
+	fmt.Println("Fetching " + urlstring)
 	URL, err1 := url.Parse(urlstring)
 	if err1 != nil {
 		return "nil", err1
@@ -196,7 +196,7 @@ func fetchVideo(urlstring string) (string, error) {
 }
 
 func convertVideo(title string) string {
-	fmt.Println("converting")
+	fmt.Println("converting " + title)
 	cmd := exec.Command("ffmpeg", "-i", title + ".mp4", title + ".mp3")
 	err := cmd.Run()
 	if err != nil {
