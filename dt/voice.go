@@ -3,6 +3,7 @@ package dt
 import (
 	"fmt"
 	"io"
+	"os"
 
 	dgo "github.com/bwmarrin/discordgo"
 	"github.com/jonas747/dca"
@@ -15,6 +16,7 @@ func (bot *Bot) loadAudio(path string, vc *dgo.VoiceConnection) (error) {
 		return err
 	}
 	defer es.Cleanup()
+	defer os.Remove(path)
 	if err := vc.Speaking(true); err != nil {
 		return fmt.Errorf("error enabling speaking: %v", err)
 	}

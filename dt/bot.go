@@ -189,13 +189,13 @@ func fetchVideo(urlstring string) (string, error) {
 	defer file.Close()
 	err := vid.Download(vid.Formats[0], file)
 	if err != nil {
-		fmt.Println("OOF")
 		return "nil", err
 	}
 	return title, nil
 }
 
 func convertVideo(title string) string {
+	defer os.Remove(title + ".mp4")
 	fmt.Println("converting " + title)
 	cmd := exec.Command("ffmpeg", "-i", title + ".mp4", title + ".mp3")
 	err := cmd.Run()
