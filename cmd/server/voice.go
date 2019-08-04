@@ -1,4 +1,4 @@
-package dt
+package server
 
 import (
 	"fmt"
@@ -9,7 +9,7 @@ import (
 	"github.com/jonas747/dca"
 )
 
-func (bot *Bot) loadAudio(path string, vc *dgo.VoiceConnection) (error) {
+func (bot *Bot) loadAudio(path string, vc *dgo.VoiceConnection) error {
 	options := dca.StdEncodeOptions
 	es, err := dca.EncodeFile(path, options)
 	if err != nil {

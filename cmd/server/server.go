@@ -1,4 +1,4 @@
-package boominloud
+package server
 
 //MediaServer media server that handles requests and streams
 //musc to an endpoint

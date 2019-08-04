@@ -1,17 +1,17 @@
-package dt
+package server
 
 import (
 	"errors"
 	"fmt"
-	"strings"
 	"math/rand"
-	"time"
+	"net/url"
 	"os"
 	"os/exec"
-	"net/url"
+	"strings"
+	"time"
 
-	"github.com/jonas747/dca"
 	dgo "github.com/bwmarrin/discordgo"
+	"github.com/jonas747/dca"
 	ytdl "github.com/rylio/ytdl"
 )
 
@@ -23,10 +23,10 @@ var (
 //Bot struct that holds the discord bot session
 type Bot struct {
 	Prefix string
-	Token string
+	Token  string
 	*dgo.Session
 	StreamingSession *dca.StreamingSession
-	urlQueue []string
+	urlQueue         []string
 }
 
 //NewBot creates new bot
@@ -60,7 +60,7 @@ func NewBot(token string, prefix string, status string) (*Bot, error) {
 	return &bot, nil
 }
 
-func (bot *Bot) messageHandler (session *dgo.Session, message *dgo.MessageCreate) {
+func (bot *Bot) messageHandler(session *dgo.Session, message *dgo.MessageCreate) {
 	user := message.Author
 	if user.ID == botID || user.Bot {
 		//Ignore self and other bots
@@ -128,8 +128,10 @@ func (bot *Bot) commandHandler(message *dgo.MessageCreate, session *dgo.Session,
 
 	case "shuffle":
 		rand.Seed(time.Now().UnixNano())
-		rand.Shuffle(len(bot.urlQueue), func(i, j int) {bot.urlQueue[i],
-			bot.urlQueue[j] = bot.urlQueue[j], bot.urlQueue[i]})
+		rand.Shuffle(len(bot.urlQueue), func(i, j int) {
+			bot.urlQueue[i],
+				bot.urlQueue[j] = bot.urlQueue[j], bot.urlQueue[i]
+		})
 		return
 
 	case "queue":
@@ -197,7 +199,7 @@ func fetchVideo(urlstring string) (string, error) {
 func convertVideo(title string) string {
 	defer os.Remove(title + ".mp4")
 	fmt.Println("converting " + title)
-	cmd := exec.Command("ffmpeg", "-i", title + ".mp4", title + ".mp3")
+	cmd := exec.Command("ffmpeg", "-i", title+".mp4", title+".mp3")
 	err := cmd.Run()
 	if err != nil {
 		fmt.Printf("Error converting video...%v\n", err)
@@ -260,7 +262,6 @@ func (bot *Bot) player(vc *dgo.VoiceConnection) {
 		}
 	}
 }
-
 
 func findUserVoiceState(session *dgo.Session, userid string, guildID string) (*dgo.VoiceState, error) {
 	guild, err := session.Guild(guildID)

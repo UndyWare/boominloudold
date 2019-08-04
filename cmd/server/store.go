@@ -1,4 +1,4 @@
-package boominloud
+package server
 
 type mediaStore interface {
 	Get(string) (interface{}, error)
