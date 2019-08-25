@@ -3,7 +3,6 @@ package server
 //MediaServer media server that handles requests and streams
 //musc to an endpoint
 type MediaServer struct {
-	Handler  requestHandler
 	Store    mediaStore
 	Streamer mediaStreamer
 }

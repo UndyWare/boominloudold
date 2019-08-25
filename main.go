@@ -4,7 +4,7 @@ import (
 	"flag"
 	"fmt"
 
-	"github.com/undyware/boominloud/dt"
+	"github.com/undyware/boominloud/cmd/server"
 )
 
 const (
@@ -27,7 +27,7 @@ func main() {
 	fmt.Printf("prefix: %s\n", opts.CommandPrefix)
 	fmt.Printf("token: %s\n", opts.Token)
 
-	bot, err := dt.NewBot(opts.Token, opts.CommandPrefix, "with my teetee")
+	bot, err := server.NewBot(opts.Token, opts.CommandPrefix, "with my teetee")
 	if err != nil {
 		fmt.Printf("error creating bot: %v", err)
 	}
