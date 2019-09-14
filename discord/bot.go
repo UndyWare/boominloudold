@@ -1,4 +1,4 @@
-package server
+package main
 
 import (
 	"errors"
@@ -30,7 +30,7 @@ type Bot struct {
 }
 
 //NewBot creates new bot
-func NewBot(token string, prefix string, status string) (*Bot, error) {
+func NewBot(token strsing, prefix string, status string) (*Bot, error) {
 	session, err := dgo.New("Bot " + token)
 	bot := Bot{prefix, token, session, nil, nil}
 	if err != nil {
