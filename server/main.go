@@ -5,7 +5,7 @@ import (
 )
 
 const (
-	defaultAddress = "127.0.0.1:9000"
+	defaultAddress = "127.0.0.1:8500"
 )
 
 func main() {
