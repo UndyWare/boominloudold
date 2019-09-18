@@ -4,7 +4,7 @@ import (
 	"flag"
 	"fmt"
 
-	"github.com/undyware/boominloud/dt"
+	dt "github.com/undyware/boominloud/discord"
 )
 
 const (

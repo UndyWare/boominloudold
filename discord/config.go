@@ -1,9 +1,4 @@
-package main
-
-import (
-	"flag"
-	"fmt"
-)
+package discord
 
 const (
 	defaultAddress = "127.0.0.1:9000"
@@ -14,6 +9,7 @@ type opts struct {
 	Addr string
 }
 
+/*
 func parseFlags() (*server, error) {
 	addr := flag.String("addr", defaultAddress, "streamer address")
 	//token := flag.String("token", defaultToken, "bot token")
@@ -28,3 +24,4 @@ func parseFlags() (*server, error) {
 	}
 	return opts, nil
 }
+*/

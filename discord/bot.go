@@ -1,4 +1,4 @@
-package main
+package discord
 
 import (
 	"errors"
@@ -30,7 +30,7 @@ type Bot struct {
 }
 
 //NewBot creates new bot
-func NewBot(token strsing, prefix string, status string) (*Bot, error) {
+func NewBot(token string, prefix string, status string) (*Bot, error) {
 	session, err := dgo.New("Bot " + token)
 	bot := Bot{prefix, token, session, nil, nil}
 	if err != nil {
@@ -243,22 +243,21 @@ func (bot *Bot) player(vc *dgo.VoiceConnection) {
 			if len(bot.urlQueue) == 0 {
 				fmt.Println("Player session ending...")
 				return
-			} else {
-				// Now we need to load up the next url to play
-				vid, err3 := fetchVideo(bot.urlQueue[0])
-				if err3 != nil {
-					fmt.Println("Error Fetching Audio...")
-					return
-				}
-
-				mp3 := convertVideo(vid)
-
-				err4 := bot.loadAudio(mp3, vc)
-				if err4 != nil {
-					fmt.Printf("error loading audio: %v\n", err4)
-				}
-				continue
 			}
+			// Now we need to load up the next url to play
+			vid, err3 := fetchVideo(bot.urlQueue[0])
+			if err3 != nil {
+				fmt.Println("Error Fetching Audio...")
+				return
+			}
+
+			mp3 := convertVideo(vid)
+
+			err4 := bot.loadAudio(mp3, vc)
+			if err4 != nil {
+				fmt.Printf("error loading audio: %v\n", err4)
+			}
+			continue
 		}
 	}
 }
