@@ -4,6 +4,8 @@
 *.dll
 *.so
 *.dylib
+*.mp3
+*.mp4
 
 # Test binary, build with `go test -c`
 *.test
