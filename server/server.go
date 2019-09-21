@@ -6,7 +6,7 @@ type MediaServer struct {
 	//Handler   requestHandler
 	requests  chan (request)
 	Playlists store
-	Store     store
+	Media     store
 	Streamers map[string]mediaStreamer
 }
 
@@ -25,7 +25,7 @@ type mediaStreamer interface {
 //Implemented by a media storage (in a filesystem on a disk)
 //	or media provider (youtube, spotify, etc.)
 type store interface {
-	Open() error
+	Open(string) error
 	Read(string) (interface{}, error)
 	Write(string, interface{}) error
 }

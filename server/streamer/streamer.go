@@ -68,6 +68,7 @@ func (s *Streamer) HandleRequest(req *Request) error {
 		}
 	//Playback control
 	case "play":
+		s.ep.
 	case "pause":
 	case "skip":
 	case "stop": //stop playback and removes queue
