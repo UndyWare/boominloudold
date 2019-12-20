@@ -4,7 +4,8 @@ import (
 	"flag"
 	"fmt"
 
-	"github.com/undyware/boominloud/dt"
+	gateway "github.com/undyware/boominloud/cmd/gateway"
+	dt "github.com/undyware/boominloud/cmd/server"
 )
 
 const (
@@ -18,6 +19,8 @@ type botOptions struct {
 }
 
 func main() {
+	fmt.Println("Starting gateway")
+	gateway.Gateway()
 	fmt.Println("bot started")
 	opts, err := parseFlags()
 	if err != nil {
